@@ -5,7 +5,7 @@ from typing import Dict, Any
 from shared.models import LoanApplication, EmploymentType, ApplicantProfile
 from shared.utils import get_logger, generate_application_id
 from orchestration.loan_approval_workflow import LoanApprovalWorkflow
-from backend.schemas import (
+from .schemas import (
     LoanApplicationRequest,
     LoanDecisionResponse,
     ApplicationStatusResponse,
@@ -69,7 +69,7 @@ async def submit_loan_application(request: LoanApplicationRequest):
         applications_cache[application_id] = {
             "application": application,
             "status": "processing",
-            "submitted_at": datetime.utcnow(),
+            "submitted_at": datetime.utcnow().isoformat(),
         }
 
         loop = asyncio.get_event_loop()
@@ -173,6 +173,10 @@ async def process_application_async(application_id: str, application: LoanApplic
         logger.info(f"Processing application {application_id}")
 
         decision = workflow.run(application)
+
+        # Convert datetime to ISO format string
+        if isinstance(decision.get("timestamp"), object) and hasattr(decision.get("timestamp"), "isoformat"):
+            decision["timestamp"] = decision["timestamp"].isoformat()
 
         applications_cache[application_id]["decision"] = decision
         applications_cache[application_id]["status"] = "completed"
