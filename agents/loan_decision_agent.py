@@ -7,12 +7,15 @@ from shared.utils import get_logger
 from mcp_servers.decision_synthesis import DecisionSynthesisServer
 from shared.models import DecisionOutcome
 import time
+import anthropic
+import json
 
 class LoanDecisionAgent:
     def __init__(self):
         self.name = "LoanDecisionAgent"
         self.logger = get_logger(self.name)
         self.mcp_server = DecisionSynthesisServer()
+        self.client = anthropic.Anthropic()
 
     def decide(
         self,
@@ -39,12 +42,17 @@ class LoanDecisionAgent:
 
             decision_data = synthesis_response["result"]
 
+            llm_explanation = self._get_llm_decision_explanation(
+                decision_data, profile_analysis, risk_analysis
+            )
+
             decision_outcome = DecisionOutcome(
                 classification=decision_data["classification"],
                 risk_score=decision_data["risk_score"],
                 confidence_level=decision_data["confidence_level"],
                 decision_factors=decision_data["decision_factors"],
                 explanation=decision_data["explanation"],
+                llm_explanation=llm_explanation,
                 case_id=case_id,
             )
 
@@ -70,3 +78,35 @@ class LoanDecisionAgent:
                 "error": str(e),
                 "execution_time_ms": (time.time() - start_time) * 1000,
             }
+
+    def _get_llm_decision_explanation(
+        self,
+        decision_data: Dict[str, Any],
+        profile_analysis: Dict[str, Any],
+        risk_analysis: Dict[str, Any],
+    ) -> str:
+        try:
+            prompt = f"""You are a senior loan officer. Based on this analysis, provide a detailed decision explanation:
+
+Classification: {decision_data['classification']}
+Risk Score: {decision_data['risk_score']:.1f}/100
+Confidence Level: {decision_data['confidence_level']:.2f}
+Decision Factors: {', '.join(decision_data['decision_factors'])}
+
+Income Stability: {profile_analysis.get('income_stability_score', 0)}/100
+Employment Risk: {profile_analysis.get('employment_risk', 'unknown')}
+DTI Ratio: {risk_analysis.get('debt_to_income_ratio', 0):.2f}
+Credit Risk Level: {risk_analysis.get('credit_score_risk_level', 'unknown')}
+Anomalies Detected: {len(risk_analysis.get('anomalies_detected', []))}
+
+Provide a professional 3-4 sentence explanation justifying this decision for the applicant."""
+
+            message = self.client.messages.create(
+                model="claude-opus-4-1",
+                max_tokens=512,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return message.content[0].text
+        except Exception as e:
+            self.logger.warning(f"LLM explanation failed: {str(e)}")
+            return decision_data.get("explanation", "Decision based on risk assessment")

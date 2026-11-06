@@ -160,6 +160,10 @@ with col2:
                                 st.subheader("📖 Explanation")
                                 st.info(decision["explanation"])
 
+                                if decision.get("llm_explanation"):
+                                    st.subheader("🤖 AI-Powered Analysis")
+                                    st.markdown(decision["llm_explanation"])
+
                                 if decision.get("execution_trace"):
                                     with st.expander("🔍 Execution Trace (Debug Info)"):
                                         for trace in decision["execution_trace"]:

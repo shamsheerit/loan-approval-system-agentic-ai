@@ -33,6 +33,7 @@ class ProfileAnalysis(BaseModel):
     employment_risk: str
     credit_history_summary: str
     application_completeness_flags: List[str] = Field(default_factory=list)
+    llm_assessment: Optional[str] = None
 
 class RiskAnalysis(BaseModel):
     debt_to_income_ratio: float = Field(..., ge=0)
@@ -40,6 +41,7 @@ class RiskAnalysis(BaseModel):
     loan_amount_risk: str
     anomalies_detected: List[str] = Field(default_factory=list)
     reasoning: str
+    llm_analysis: Optional[str] = None
 
 class DecisionOutcome(BaseModel):
     classification: DecisionClassification
@@ -47,6 +49,7 @@ class DecisionOutcome(BaseModel):
     confidence_level: float = Field(..., ge=0, le=1)
     decision_factors: List[str]
     explanation: str
+    llm_explanation: Optional[str] = None
     case_id: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 

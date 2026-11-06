@@ -7,12 +7,15 @@ from shared.utils import get_logger
 from mcp_servers.risk_rules import RiskRulesServer
 from shared.models import RiskAnalysis, LoanApplication
 import time
+import anthropic
+import json
 
 class FinancialRiskAgent:
     def __init__(self):
         self.name = "FinancialRiskAgent"
         self.logger = get_logger(self.name)
         self.mcp_server = RiskRulesServer()
+        self.client = anthropic.Anthropic()
 
     def analyze(self, application: LoanApplication) -> Dict[str, Any]:
         start_time = time.time()
@@ -59,6 +62,10 @@ class FinancialRiskAgent:
             anomaly_data = anomaly_response["result"]
             anomalies = anomaly_data.get("anomalies_detected", [])
 
+            llm_risk_analysis = self._get_llm_risk_analysis(
+                dti_ratio, credit_risk_level, loan_amount_risk, anomalies, application
+            )
+
             risk_analysis = RiskAnalysis(
                 debt_to_income_ratio=dti_ratio,
                 credit_score_risk_level=credit_risk_level,
@@ -67,6 +74,7 @@ class FinancialRiskAgent:
                 reasoning=self._generate_risk_reasoning(
                     dti_ratio, credit_risk_level, loan_amount_risk, anomalies
                 ),
+                llm_analysis=llm_risk_analysis,
             )
 
             execution_time_ms = (time.time() - start_time) * 1000
@@ -117,3 +125,35 @@ class FinancialRiskAgent:
             reasons.append("Financial profile within acceptable parameters")
 
         return "; ".join(reasons)
+
+    def _get_llm_risk_analysis(
+        self,
+        dti_ratio: float,
+        credit_risk_level: str,
+        loan_amount_risk: str,
+        anomalies: list,
+        application: LoanApplication,
+    ) -> str:
+        try:
+            prompt = f"""You are a financial risk analyst. Assess the financial risk for this loan applicant:
+
+Debt-to-Income Ratio: {dti_ratio:.2f}
+Credit Risk Level: {credit_risk_level}
+Loan Amount Risk: {loan_amount_risk}
+Loan Amount: ${application.loan_amount:,.0f}
+Annual Income: ${application.applicant_profile.income:,.0f}
+Credit Score: {application.credit_score}
+Existing Liabilities: ${application.existing_liabilities:,.0f}
+Risk Anomalies: {', '.join(anomalies) if anomalies else 'None detected'}
+
+Provide a concise 2-3 sentence analysis of the financial risk level and key concerns."""
+
+            message = self.client.messages.create(
+                model="claude-opus-4-1",
+                max_tokens=256,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return message.content[0].text
+        except Exception as e:
+            self.logger.warning(f"LLM risk analysis failed: {str(e)}")
+            return f"Risk assessment: DTI {dti_ratio:.2f}, Credit {credit_risk_level}, Loan risk {loan_amount_risk}"
