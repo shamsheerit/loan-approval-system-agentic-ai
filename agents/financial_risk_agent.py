@@ -149,7 +149,7 @@ Risk Anomalies: {', '.join(anomalies) if anomalies else 'None detected'}
 Provide a concise 2-3 sentence analysis of the financial risk level and key concerns."""
 
             message = self.client.messages.create(
-                model="claude-opus-4-1",
+                model="claude-opus-4-5-20251101",
                 max_tokens=256,
                 messages=[{"role": "user", "content": prompt}],
             )

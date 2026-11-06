@@ -102,7 +102,7 @@ Anomalies Detected: {len(risk_analysis.get('anomalies_detected', []))}
 Provide a professional 3-4 sentence explanation justifying this decision for the applicant."""
 
             message = self.client.messages.create(
-                model="claude-opus-4-1",
+                model="claude-opus-4-5-20251101",
                 max_tokens=512,
                 messages=[{"role": "user", "content": prompt}],
             )

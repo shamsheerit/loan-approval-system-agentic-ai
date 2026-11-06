@@ -117,7 +117,7 @@ Employment History: {profile_info.get('employment_history', 'Unknown')}
 Provide a concise 2-3 sentence assessment of the applicant's profile strength and any concerns."""
 
             message = self.client.messages.create(
-                model="claude-opus-4-1",
+                model="claude-opus-4-5-20251101",
                 max_tokens=256,
                 messages=[{"role": "user", "content": prompt}],
             )
