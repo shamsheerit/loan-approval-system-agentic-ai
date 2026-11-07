@@ -4,7 +4,7 @@ import asyncio
 from typing import Dict, Any
 from shared.models import LoanApplication, EmploymentType, ApplicantProfile
 from shared.utils import get_logger, generate_application_id
-from orchestration.parallel_workflow import ParallelLoanApprovalWorkflow
+from orchestration.loan_approval_workflow import LoanApprovalWorkflow
 from .schemas import (
     LoanApplicationRequest,
     LoanDecisionResponse,
@@ -30,7 +30,7 @@ app.add_middleware(
 logger = get_logger("FastAPI")
 
 applications_cache: Dict[str, Dict[str, Any]] = {}
-workflow = ParallelLoanApprovalWorkflow()
+workflow = LoanApprovalWorkflow()
 
 @app.post("/api/loan/submit", response_model=ApplicationStatusResponse)
 async def submit_loan_application(request: LoanApplicationRequest):
