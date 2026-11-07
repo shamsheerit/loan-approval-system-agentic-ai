@@ -5,6 +5,7 @@ from shared.models import ApplicantProfile, EmploymentType
 class ApplicantDBServer(BaseMCPServer):
     def __init__(self):
         self.mock_applicants = {
+            # Original test cases
             "APP001": {
                 "profile": ApplicantProfile(
                     age=35, income=60000, employment_type=EmploymentType.SALARIED
@@ -25,6 +26,30 @@ class ApplicantDBServer(BaseMCPServer):
                 ),
                 "credit_history": "Limited credit history, new applicant",
                 "employment_history": "Self-employed since 2021",
+            },
+            # Test scenario: APPROVED
+            "APP_APPROVED_001": {
+                "profile": ApplicantProfile(
+                    age=40, income=85000, employment_type=EmploymentType.SALARIED
+                ),
+                "credit_history": "Excellent credit, no defaults, 10 years history",
+                "employment_history": "Stable employment since 2010",
+            },
+            # Test scenario: REJECTED
+            "APP_REJECTED_001": {
+                "profile": ApplicantProfile(
+                    age=26, income=22000, employment_type=EmploymentType.SELF_EMPLOYED
+                ),
+                "credit_history": "Poor credit, multiple late payments, recent defaults",
+                "employment_history": "Self-employed since 2022, unstable income",
+            },
+            # Test scenario: MANUAL REVIEW
+            "APP_REVIEW_001": {
+                "profile": ApplicantProfile(
+                    age=35, income=55000, employment_type=EmploymentType.BUSINESS
+                ),
+                "credit_history": "Fair credit, one late payment 1 year ago",
+                "employment_history": "Business owner since 2015, variable income",
             },
         }
         super().__init__("ApplicantDBServer")
