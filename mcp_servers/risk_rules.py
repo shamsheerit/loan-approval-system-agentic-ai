@@ -107,7 +107,7 @@ class RiskRulesServer(BaseMCPServer):
         if loan_to_income > 4:
             anomalies.append("Loan amount significantly exceeds annual income")
 
-        if age < 25 and loan_to_income > 2:
+        if age < 30 and loan_to_income > 2:
             anomalies.append("Young applicant with high loan-to-income ratio")
 
         if employment_type == "self_employed" and credit_score < 650:
