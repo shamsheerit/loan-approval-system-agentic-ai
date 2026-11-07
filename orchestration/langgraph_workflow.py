@@ -45,6 +45,8 @@ class LoanApprovalGraphWorkflow:
         workflow.add_node("run_compliance_agent", self._run_compliance_agent)
         workflow.add_node("format_response", self._format_response)
 
+        workflow.set_entry_point("validate_input")
+
         workflow.add_edge("validate_input", "run_profile_agent")
         workflow.add_edge("run_profile_agent", "run_risk_agent")
         workflow.add_edge("run_risk_agent", "run_decision_agent")
