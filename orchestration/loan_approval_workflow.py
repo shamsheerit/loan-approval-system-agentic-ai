@@ -237,6 +237,7 @@ class LoanApprovalWorkflow:
             "confidence_level": decision.get("confidence_level"),
             "decision_factors": decision.get("decision_factors", []),
             "explanation": decision.get("explanation"),
+            "llm_explanation": decision.get("llm_explanation"),
             "case_id": compliance_action.get("case_id", generate_case_id()),
             "timestamp": decision.get("timestamp"),
             "execution_trace": state.get("execution_trace", []),

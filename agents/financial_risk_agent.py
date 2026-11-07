@@ -4,7 +4,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shared.utils import get_logger
-from mcp_servers.risk_rules import RiskRulesServer
+from mcp_servers.mcp_provider import MCPServerProvider
 from shared.models import RiskAnalysis, LoanApplication
 import time
 import anthropic
@@ -17,7 +17,7 @@ class FinancialRiskAgent:
     def __init__(self):
         self.name = "FinancialRiskAgent"
         self.logger = get_logger(self.name)
-        self.mcp_server = RiskRulesServer()
+        self.mcp_provider = MCPServerProvider.get_instance()
         self.client = anthropic.Anthropic(
             api_key=os.getenv("ANTHROPIC_API_KEY"),
             base_url=os.getenv("ANTHROPIC_BASE_URL")
@@ -31,8 +31,8 @@ class FinancialRiskAgent:
             monthly_income = application.applicant_profile.income / 12
             monthly_liabilities = application.existing_liabilities / 12
 
-            dti_response = self.mcp_server.call_tool(
-                "calculate_dti_ratio",
+            dti_response = self.mcp_provider.call_tool(
+                "risk_rules", "calculate_dti_ratio",
                 monthly_income=monthly_income,
                 monthly_liabilities=monthly_liabilities,
             )
@@ -40,15 +40,15 @@ class FinancialRiskAgent:
             dti_ratio = dti_data.get("dti_ratio", 0.5)
             dti_classification = dti_data.get("classification", "moderate")
 
-            credit_response = self.mcp_server.call_tool(
-                "assess_credit_risk", credit_score=application.credit_score
+            credit_response = self.mcp_provider.call_tool(
+                "risk_rules", "assess_credit_risk", credit_score=application.credit_score
             )
             credit_data = credit_response["result"]
             credit_risk_level = credit_data.get("risk_level", "fair")
             credit_risk_score = credit_data.get("risk_score", 50)
 
-            loan_response = self.mcp_server.call_tool(
-                "evaluate_loan_amount_risk",
+            loan_response = self.mcp_provider.call_tool(
+                "risk_rules", "evaluate_loan_amount_risk",
                 loan_amount=application.loan_amount,
                 annual_income=application.applicant_profile.income,
                 tenure_months=application.tenure_months,
@@ -57,8 +57,8 @@ class FinancialRiskAgent:
             loan_to_income = loan_data.get("loan_to_income_ratio", 2)
             loan_amount_risk = loan_data.get("risk_level", "moderate")
 
-            anomaly_response = self.mcp_server.call_tool(
-                "detect_anomalies",
+            anomaly_response = self.mcp_provider.call_tool(
+                "risk_rules", "detect_anomalies",
                 credit_score=application.credit_score,
                 dti_ratio=dti_ratio,
                 loan_to_income=loan_to_income,

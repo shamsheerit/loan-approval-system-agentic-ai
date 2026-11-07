@@ -4,7 +4,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shared.utils import get_logger
-from mcp_servers.applicant_db import ApplicantDBServer
+from mcp_servers.mcp_provider import MCPServerProvider
 from shared.models import ProfileAnalysis, LoanApplication
 import time
 import anthropic
@@ -17,7 +17,7 @@ class ApplicantProfileAgent:
     def __init__(self):
         self.name = "ApplicantProfileAgent"
         self.logger = get_logger(self.name)
-        self.mcp_server = ApplicantDBServer()
+        self.mcp_provider = MCPServerProvider.get_instance()
         self.client = anthropic.Anthropic(
             api_key=os.getenv("ANTHROPIC_API_KEY"),
             base_url=os.getenv("ANTHROPIC_BASE_URL")
@@ -28,8 +28,8 @@ class ApplicantProfileAgent:
         self.logger.info(f"Starting profile analysis for {application.applicant_id}")
 
         try:
-            profile_data = self.mcp_server.call_tool(
-                "fetch_applicant_profile", applicant_id=application.applicant_id
+            profile_data = self.mcp_provider.call_tool(
+                "applicant_db", "fetch_applicant_profile", applicant_id=application.applicant_id
             )
 
             if profile_data["status"] == "error":
@@ -41,8 +41,8 @@ class ApplicantProfileAgent:
 
             profile_info = profile_data["result"]
 
-            income_stability_response = self.mcp_server.call_tool(
-                "get_income_stability_score", applicant_id=application.applicant_id
+            income_stability_response = self.mcp_provider.call_tool(
+                "applicant_db", "get_income_stability_score", applicant_id=application.applicant_id
             )
 
             income_stability_score = income_stability_response["result"].get(
@@ -54,8 +54,8 @@ class ApplicantProfileAgent:
                 income_stability_score,
             )
 
-            completeness_response = self.mcp_server.call_tool(
-                "validate_application_completeness", applicant_id=application.applicant_id
+            completeness_response = self.mcp_provider.call_tool(
+                "applicant_db", "validate_application_completeness", applicant_id=application.applicant_id
             )
 
             completeness_flags = completeness_response["result"].get("flags", [])

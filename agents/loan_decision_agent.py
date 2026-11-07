@@ -4,7 +4,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shared.utils import get_logger
-from mcp_servers.decision_synthesis import DecisionSynthesisServer
+from mcp_servers.mcp_provider import MCPServerProvider
 from shared.models import DecisionOutcome
 import time
 import anthropic
@@ -17,7 +17,7 @@ class LoanDecisionAgent:
     def __init__(self):
         self.name = "LoanDecisionAgent"
         self.logger = get_logger(self.name)
-        self.mcp_server = DecisionSynthesisServer()
+        self.mcp_provider = MCPServerProvider.get_instance()
         self.client = anthropic.Anthropic(
             api_key=os.getenv("ANTHROPIC_API_KEY"),
             base_url=os.getenv("ANTHROPIC_BASE_URL")
@@ -33,8 +33,8 @@ class LoanDecisionAgent:
         self.logger.info(f"Making loan decision for case {case_id}")
 
         try:
-            synthesis_response = self.mcp_server.call_tool(
-                "synthesize_decision",
+            synthesis_response = self.mcp_provider.call_tool(
+                "decision_synthesis", "synthesize_decision",
                 profile_analysis=profile_analysis,
                 risk_analysis=risk_analysis,
             )
