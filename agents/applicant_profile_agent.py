@@ -28,37 +28,23 @@ class ApplicantProfileAgent:
         self.logger.info(f"Starting profile analysis for {application.applicant_id}")
 
         try:
-            profile_data = self.mcp_provider.call_tool(
-                "applicant_db", "fetch_applicant_profile", applicant_id=application.applicant_id
-            )
+            employment_type = application.applicant_profile.employment_type
 
-            if profile_data["status"] == "error":
-                return {
-                    "status": "error",
-                    "agent_name": self.name,
-                    "error": profile_data.get("error", "Unknown error"),
-                }
+            income_stability_score = self._calculate_income_stability(employment_type)
+            employment_risk = self._assess_employment_risk(employment_type, income_stability_score)
 
-            profile_info = profile_data["result"]
+            profile_info = {
+                "applicant_id": application.applicant_id,
+                "age": application.applicant_profile.age,
+                "income": application.applicant_profile.income,
+                "employment_type": employment_type.value,
+                "credit_history": "Sourced from form input",
+                "employment_history": f"{employment_type.value.replace('_', ' ').title()} since unknown date",
+            }
 
-            income_stability_response = self.mcp_provider.call_tool(
-                "applicant_db", "get_income_stability_score", applicant_id=application.applicant_id
-            )
-
-            income_stability_score = income_stability_response["result"].get(
-                "income_stability_score", 60
-            )
-
-            employment_risk = self._assess_employment_risk(
-                application.applicant_profile.employment_type,
-                income_stability_score,
-            )
-
-            completeness_response = self.mcp_provider.call_tool(
-                "applicant_db", "validate_application_completeness", applicant_id=application.applicant_id
-            )
-
-            completeness_flags = completeness_response["result"].get("flags", [])
+            completeness_flags = []
+            if not application.applicant_id:
+                completeness_flags.append("Missing applicant ID")
 
             llm_assessment = self._get_llm_profile_assessment(
                 application, income_stability_score, employment_risk, profile_info
@@ -67,9 +53,7 @@ class ApplicantProfileAgent:
             profile_analysis = ProfileAnalysis(
                 income_stability_score=income_stability_score,
                 employment_risk=employment_risk,
-                credit_history_summary=profile_info.get(
-                    "credit_history", "No history available"
-                ),
+                credit_history_summary="Form-based profile assessment",
                 application_completeness_flags=completeness_flags,
                 llm_assessment=llm_assessment,
             )
@@ -91,6 +75,16 @@ class ApplicantProfileAgent:
                 "error": str(e),
                 "execution_time_ms": (time.time() - start_time) * 1000,
             }
+
+    def _calculate_income_stability(self, employment_type) -> float:
+        from shared.models import EmploymentType
+        if employment_type == EmploymentType.SALARIED:
+            return 85.0
+        elif employment_type == EmploymentType.BUSINESS:
+            return 65.0
+        elif employment_type == EmploymentType.SELF_EMPLOYED:
+            return 60.0
+        return 60.0
 
     def _assess_employment_risk(
         self, employment_type: str, income_stability_score: float

@@ -197,9 +197,12 @@ class LoanApprovalGraphWorkflow:
                 return state
 
             case_id = generate_case_id()
+            profile_data = state.get("profile_analysis", {})
+            risk_data = state.get("risk_analysis", {})
+            self.logger.debug(f"Decision agent inputs: dti_ratio={risk_data.get('debt_to_income_ratio')}, income_stability={profile_data.get('income_stability_score')}")
             result = self.decision_agent.decide(
-                state.get("profile_analysis", {}),
-                state.get("risk_analysis", {}),
+                profile_data,
+                risk_data,
                 case_id,
             )
 

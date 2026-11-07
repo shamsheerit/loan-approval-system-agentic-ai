@@ -66,6 +66,9 @@ class MCPServerProvider:
                 "error": f"Server '{server_name}' not found. Available: {list(servers.keys())}",
             }
 
+        if server_name == "decision_synthesis" and tool_name == "synthesize_decision":
+            logger.debug(f"Calling synthesize_decision with risk_analysis.dti_ratio={kwargs.get('risk_analysis', {}).get('debt_to_income_ratio')}")
+
         server = servers[server_name]
         return server.call_tool(tool_name, **kwargs)
 

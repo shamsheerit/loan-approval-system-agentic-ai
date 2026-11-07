@@ -15,15 +15,19 @@ class DecisionSynthesisServer(BaseMCPServer):
         risk_analysis: Dict[str, Any],
     ) -> Dict[str, Any]:
         income_stability = profile_analysis.get("income_stability_score", 50)
-        dti_ratio = risk_analysis.get("dti_ratio", 0.5)
+        dti_ratio = risk_analysis.get("debt_to_income_ratio", 0.5)
         credit_risk_score = risk_analysis.get("credit_risk_score", 50)
         anomaly_count = risk_analysis.get("anomaly_count", 0)
+
+        self.logger.debug(f"Synthesis inputs: income_stability={income_stability}, dti_ratio={dti_ratio}, credit_risk={credit_risk_score}, anomalies={anomaly_count}")
 
         combined_risk_score = (
             (credit_risk_score * 0.45)
             + ((dti_ratio * 100) * 0.35)
             + ((100 - income_stability) * 0.2)
         )
+
+        self.logger.debug(f"Combined risk before cap: {combined_risk_score}")
 
         combined_risk_score = min(100, max(0, combined_risk_score))
 
