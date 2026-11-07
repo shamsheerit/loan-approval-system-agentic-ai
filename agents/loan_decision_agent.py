@@ -9,13 +9,19 @@ from shared.models import DecisionOutcome
 import time
 import anthropic
 import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class LoanDecisionAgent:
     def __init__(self):
         self.name = "LoanDecisionAgent"
         self.logger = get_logger(self.name)
         self.mcp_server = DecisionSynthesisServer()
-        self.client = anthropic.Anthropic()
+        self.client = anthropic.Anthropic(
+            api_key=os.getenv("ANTHROPIC_API_KEY"),
+            base_url=os.getenv("ANTHROPIC_BASE_URL")
+        )
 
     def decide(
         self,
@@ -102,7 +108,7 @@ Anomalies Detected: {len(risk_analysis.get('anomalies_detected', []))}
 Provide a professional 3-4 sentence explanation justifying this decision for the applicant."""
 
             message = self.client.messages.create(
-                model="claude-opus-4-5-20251101",
+                model=os.getenv("ANTHROPIC_BASE_MODEL", "global.anthropic.claude-haiku-4-5-20251001-v1:0"),
                 max_tokens=512,
                 messages=[{"role": "user", "content": prompt}],
             )

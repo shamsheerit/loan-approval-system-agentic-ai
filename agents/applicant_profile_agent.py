@@ -9,13 +9,19 @@ from shared.models import ProfileAnalysis, LoanApplication
 import time
 import anthropic
 import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class ApplicantProfileAgent:
     def __init__(self):
         self.name = "ApplicantProfileAgent"
         self.logger = get_logger(self.name)
         self.mcp_server = ApplicantDBServer()
-        self.client = anthropic.Anthropic()
+        self.client = anthropic.Anthropic(
+            api_key=os.getenv("ANTHROPIC_API_KEY"),
+            base_url=os.getenv("ANTHROPIC_BASE_URL")
+        )
 
     def analyze(self, application: LoanApplication) -> Dict[str, Any]:
         start_time = time.time()
@@ -117,7 +123,7 @@ Employment History: {profile_info.get('employment_history', 'Unknown')}
 Provide a concise 2-3 sentence assessment of the applicant's profile strength and any concerns."""
 
             message = self.client.messages.create(
-                model="claude-opus-4-5-20251101",
+                model=os.getenv("ANTHROPIC_BASE_MODEL", "global.anthropic.claude-haiku-4-5-20251001-v1:0"),
                 max_tokens=256,
                 messages=[{"role": "user", "content": prompt}],
             )
