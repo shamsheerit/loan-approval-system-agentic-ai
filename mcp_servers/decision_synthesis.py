@@ -20,15 +20,18 @@ class DecisionSynthesisServer(BaseMCPServer):
         anomaly_count = risk_analysis.get("anomaly_count", 0)
 
         combined_risk_score = (
-            (credit_risk_score * 0.4)
-            + ((dti_ratio * 100) * 0.3)
-            + ((100 - income_stability) * 0.3)
+            (credit_risk_score * 0.45)
+            + ((dti_ratio * 100) * 0.35)
+            + ((100 - income_stability) * 0.2)
         )
 
         combined_risk_score = min(100, max(0, combined_risk_score))
 
-        if anomaly_count >= 3:
-            combined_risk_score = min(100, combined_risk_score + 20)
+        # Boost risk score for extreme anomalies
+        if anomaly_count >= 4:
+            combined_risk_score = min(100, combined_risk_score + 25)
+        elif anomaly_count >= 3:
+            combined_risk_score = min(100, combined_risk_score + 15)
 
         classification = self._determine_classification(
             combined_risk_score, anomaly_count
@@ -55,9 +58,15 @@ class DecisionSynthesisServer(BaseMCPServer):
     def _determine_classification(
         self, risk_score: float, anomaly_count: int
     ) -> DecisionClassification:
-        if anomaly_count >= 3:
+        # High risk score always triggers rejection, even with anomalies
+        if risk_score >= 75:
+            return DecisionClassification.REJECTED
+
+        # Multiple anomalies with high risk triggers manual review
+        if anomaly_count >= 3 and risk_score >= 60:
             return DecisionClassification.MANUAL_REVIEW
 
+        # Standard classification by risk score
         if risk_score >= 70:
             return DecisionClassification.REJECTED
         elif risk_score >= 40:
